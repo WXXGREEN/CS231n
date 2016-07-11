@@ -28,6 +28,8 @@ def svm_loss_naive(W, X, y, reg):
   for i in xrange(num_train):
     scores = X[i].dot(W)
     correct_class_score = scores[y[i]]
+    dLi=np.zeros(W.shape)
+    class_didnt_meet_desired_margin=0.0
     for j in xrange(num_classes):
       if j == y[i]:
         continue
@@ -35,12 +37,22 @@ def svm_loss_naive(W, X, y, reg):
       if margin > 0:
         loss += margin
 
+        # Compute the gradient of the loss function and store it dW.
+        dLi[:,j] = X[i]
+        class_didnt_meet_desired_margin += 1.0
+    dLi[:,y[i]] = X[i] * (-class_didnt_meet_desired_margin)
+    dW += dLi
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
 
+  # Same with gradient
+  dW /= num_train
+
   # Add regularization to the loss.
   loss += 0.5 * reg * np.sum(W * W)
+
+  dW += reg*W
 
   #############################################################################
   # TODO:                                                                     #
@@ -69,7 +81,12 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+  S = X.dot(W)
+  correct_class_scores = np.choose(y, S.T)
+  M = S.T - correct_class_scores + 1
+  loss = (1.0/X.shape[0])*np.sum(np.maximum(0,M)) - 1 + 0.5 * reg * np.sum(W * W)
+
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -84,7 +101,12 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  C = (M.T > 0).astype(float)
+  margin = C.sum(1) - 1
+  C[range(C.shape[0]), y] = -margin
+  dW = (1.0/X.shape[0])*np.dot(X.T, C) + reg*W
+
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
