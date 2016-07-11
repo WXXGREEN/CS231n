@@ -70,6 +70,7 @@ def softmax_loss_vectorized(W, X, y, reg):
   # Initialize the loss and gradient to zero.
   loss = 0.0
   dW = np.zeros_like(W)
+  num_train = X.shape[0]
 
   #############################################################################
   # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
@@ -77,25 +78,37 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  class_num=W.shape[1]
-  train_num=X.shape[0]
+  # class_num=W.shape[1]
+  # train_num=X.shape[0]
+  #
+  # f=np.dot(X,W)
+  #
+  # f-=np.max(f)
+  #
+  # f_correct=f[range(train_num),y]
+  # loss=-np.mean(np.log(np.exp(f_correct)/np.sum(np.exp(f))))
+  #
+  # p = np.exp(f_correct)/np.sum(np.exp(f))
+  #
+  # ind = np.zeros(p.shape)
+  # ind[range(train_num),y] = 1
+  #
+  # dW = np.dot(X.T,(p-ind))
+  # dW /= train_num
+  #
+  # loss += 0.5 * reg * np.sum(W * W)
+  # dW += reg*W
 
-  f=np.dot(X,W)
-
-  f-=np.max(f)
-
-  f_correct=f[range(train_num),y]
-  loss=-np.mean(np.log(np.exp(f_correct)/np.sum(np.exp(f))))
-
-  p = np.exp(f)/np.sum(np.exp(f), axis=0)
-  print 'p shape:' % p.shape
-  ind = np.zeros(p.shape)
-  ind[range(train_num),y] = 1
-  dW = np.dot(X.T,(p-ind))
-  dW /= train_num
-
+  scores = X.dot(W)
+  scores -= np.max(scores,axis=1).reshape(num_train,1)
+  P = np.exp(scores)/np.reshape(np.sum(np.exp(scores),axis=1),(num_train,1))
+  loss = -np.sum(np.log(P[(range(num_train),y)]))
+  loss /= num_train
   loss += 0.5 * reg * np.sum(W * W)
-  dW += reg*W
+
+  P[(range(num_train),y)] = P[(range(num_train),y)] - 1
+  dW = (1.0/num_train) * np.dot(X.T,P) + reg * W
+
 
   #############################################################################
   #                          END OF YOUR CODE                                 #
